@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002';
 
 /**
  * Creates directory if it doesn't exist and returns the full path
@@ -36,6 +36,8 @@ const sanitizeFileName = (name: string): string => {
  */
 export const saveJsonToFile = async (data: any, projectName: string): Promise<string> => {
   try {
+    console.log('Saving data:', { projectName, dataLength: data?.length });
+    
     const response = await fetch(`${API_URL}/api/save-questionnaire`, {
       method: 'POST',
       headers: {
@@ -47,12 +49,12 @@ export const saveJsonToFile = async (data: any, projectName: string): Promise<st
       })
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Server error: ${response.status}`);
-    }
-
     const result = await response.json();
+    console.log('Server response:', result);
+
+    if (!response.ok) {
+      throw new Error(result.message || `Server error: ${response.status}`);
+    }
     
     if (!result.success) {
       throw new Error(result.message || 'Unknown server error');
@@ -66,4 +68,4 @@ export const saveJsonToFile = async (data: any, projectName: string): Promise<st
     }
     throw error;
   }
-}; 
+};
