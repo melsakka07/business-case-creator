@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  .input-base {
+    @apply w-full px-4 py-3 border-2 border-gray-200 rounded-xl transition-all duration-200 
+           focus:border-indigo-500 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 
+           hover:border-indigo-300;
+  }
+}
