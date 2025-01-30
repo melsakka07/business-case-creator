@@ -43,13 +43,24 @@ async function initializeStorage() {
   }
 }
 
-// Validate questionnaire structure
+// Update the validation function to match the client's data structure
 function validateQuestionnaire(data: any): { valid: boolean; message?: string } {
-  if (!data?.sections?.length) return { valid: false, message: 'No sections provided' };
+  if (!Array.isArray(data)) {
+    return { valid: false, message: 'Data must be an array of questions' };
+  }
   
-  for (const [index, section] of data.sections.entries()) {
-    if (!section?.title?.trim()) return { valid: false, message: `Section ${index + 1} missing title` };
-    if (!section?.questions?.length) return { valid: false, message: `Section "${section.title}" has no questions` };
+  if (data.length === 0) {
+    return { valid: false, message: 'No questions provided' };
+  }
+  
+  // Check if all required fields are present in each entry
+  for (const entry of data) {
+    if (!entry.category || !entry.question || entry.value === undefined) {
+      return { 
+        valid: false, 
+        message: 'Each entry must have category, question, and value fields' 
+      };
+    }
   }
   
   return { valid: true };
@@ -57,31 +68,54 @@ function validateQuestionnaire(data: any): { valid: boolean; message?: string } 
 
 app.post('/api/save-questionnaire', async (req: Request, res: Response) => {
   try {
-    console.log('Received request body:', req.body);
-
     const { data, projectName } = req.body;
     
+    // Validate required fields
     if (!projectName || !data) {
-      console.error('Invalid request:', { projectName, dataExists: !!data });
       return res.status(400).json({
         success: false,
         message: 'Project name and data are required'
       });
     }
 
+    // Validate questionnaire structure
+    const validation = validateQuestionnaire(data);
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        message: validation.message
+      });
+    }
+
+    // 1. Generate timestamp string
     const timestamp = new Date().toISOString().replace(/[:\.]/g, '-');
+    // Example output: "2024-02-28T15-30-45-789Z"
+
+    // 2. Sanitize the project name
     const safeProjectName = projectName.toString().replace(/[^a-z0-9-_]/gi, '_').toLowerCase();
+    // Example: if projectName is "My Project!" it becomes "my_project_"
+
+    // 3. Combine them to create directory name
     const dirName = `${safeProjectName}_${timestamp}`;
-    const fileName = `${dirName}.json`;
+    // Example: "my_project_2024-02-28T15-30-45-789Z"
+
+    // 4. Set the fixed filename
+    const fileName = `questionnaire.json`;
     
+    // 5. Create the full directory path
+    const projectDir = path.join(STORAGE_DIR, dirName);
+    // Example: "/your/app/json_files/my_project_2024-02-28T15-30-45-789Z"
+
+    // 6. Create the full file path
+    const filePath = path.join(projectDir, fileName);
+    // Final path: "/your/app/json_files/my_project_2024-02-28T15-30-45-789Z/questionnaire.json"
+
     // Ensure storage directory exists
     await fs.mkdir(STORAGE_DIR, { recursive: true });
     
     // Create project-specific directory
-    const projectDir = path.join(STORAGE_DIR, dirName);
     await fs.mkdir(projectDir, { recursive: true });
     
-    const filePath = path.join(projectDir, fileName);
     console.log('Writing to:', filePath);
 
     const fileContent = JSON.stringify({

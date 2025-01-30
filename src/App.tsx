@@ -26,7 +26,7 @@ function App() {
             description: questionnaire_data.Description[index],
             inputType: questionnaire_data['Input Type'][index],
             index,
-            required: questionnaire_data.Required?.[index] ?? false,
+            required: false,
           });
         }
         return acc;

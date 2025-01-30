@@ -18,13 +18,33 @@ export const exportFormData = async (data: QuestionnaireEntry[], projectName: st
       value: entry.value instanceof File ? entry.value.name : entry.value
     }));
 
-    console.log('Exporting data:', {
+    console.log('Sending data to server:', {
       projectName,
-      entries: processedData.length
+      dataLength: processedData.length
     });
 
-    const filePath = await saveJsonToFile(processedData, projectName);
-    console.log('Export successful:', filePath);
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3002'}/api/save-questionnaire`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        projectName,
+        data: processedData
+      })
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(result.message || `Server error: ${response.status}`);
+    }
+    
+    if (!result.success) {
+      throw new Error(result.message || 'Unknown server error');
+    }
+
+    console.log('Export successful:', result);
   } catch (error) {
     console.error('Export failed:', error);
     throw error;
